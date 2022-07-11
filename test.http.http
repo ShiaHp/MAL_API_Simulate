@@ -1,0 +1,20 @@
+# verify otp
+POST  localhost:8080/api/v1/auth/register
+Content-Type: application/json
+
+{
+    "email" : "Shia@gmail.com"
+}
+
+
+###
+
+
+
+POST http://localhost:8080/api/v1/createUser
+Content-Type: application/json
+
+{
+    "email" : "Shia@gmail.com"
+}
+
