@@ -31,7 +31,7 @@ const connectDB = (url) => {
 
 const userRoute = require("./routes/user.route")
 const withListRoute = require("./routes/userChange,route")
-
+const animeRoute = require("./routes/anime.route")
 
 
 app.use(
@@ -46,7 +46,7 @@ app.use(
 
 app.use("/api/v1/auth/",userRoute)
 app.use("/api/v1/users",withListRoute)
-
+app.use("/api/v1/anime" , animeRoute)
 
 const start = async () => {
   try {
