@@ -5,14 +5,18 @@ const {
   addNewAnime,
   findAllEpisodeOfAnime,
   findExactEpisodesOnAired,
-  findEpisodeBySearchName,
-  findAllAnimeBySearchName
+  findBySearchName,
+  deleteManyEpisodes,
 } = require("../controllers/anime.controller");
+const { createSeasonsYear } = require("../controllers/anime_info/anime_info_controller");
 
 router.post("/addNewAnime", addNewAnime);
 router.post("/addEpisode", addEpisode);
 router.get("/getAllEpisode", findAllEpisodeOfAnime);
 router.get("/getEpisodeExactlyByDate", findExactEpisodesOnAired);
-router.get("/findEpisodeBySearchName",findEpisodeBySearchName)
-router.get("/findAllAnimeBySearchName",findAllAnimeBySearchName)
+router.get("/findBySearchName",findBySearchName)
+router.delete("/deleteManyEpisodes/:id",deleteManyEpisodes)
+
+
+router.post("/createNewSeason", createSeasonsYear)
 module.exports = router;

@@ -1,13 +1,14 @@
 const _Anime = require("../models/Anime/anime.model");
 const _Episode = require("../models/Anime/epsisode.model");
+const redisClient = require("../utils/redis");
+
 
 const {
   addEpisode,
   addNewAnime,
   findAllEpisodeOfAnime,
   findExactEpisodesOnAired,
-  findEpisodeBySearchName,
-  findAllAnimeBySearchName
+  findBySearchName,
 } = require("../services/anime.services");
 
 function dateIsValid(dateStr) {
@@ -42,6 +43,8 @@ module.exports = {
   },
   addNewAnime: async (req, res, next) => {
     try {
+    
+   
       const { code, message, elements } = await addNewAnime(req.body);
       res.status(code).json({
         message: message,
@@ -52,16 +55,51 @@ module.exports = {
     }
   },
   findAllEpisodeOfAnime: async (req, res, next) => {
-    try {
-      const { id } = req.query;
+    let { pageSize, episode, allOfEpisode } = req.query;
+    const { id } = req.body;
 
-      const { code, message, elements } = await findAllEpisodeOfAnime({ id });
+    if (allOfEpisode === "24") {
+      const { code, message, elements } = await findAllEpisodeOfAnime({
+        id,
+        pageSize,
+        episode,
+        allOfEpisode,
+      });
+
       res.status(code).json({
         message: message,
         elements,
       });
-    } catch (error) {
-      res.status(501).json({ message: error.message });
+    }
+    try {
+      redisClient.get(id, async (err, resp) => {
+        if (err) throw err;
+
+        if (resp) {
+          res.status(200).send({
+            res: resp,
+            message: "data retrieved from the cache",
+          });
+        } else {
+          episode = parseInt(episode);
+          allOfEpisode = parseInt(allOfEpisode);
+          const { code, message, elements } = await findAllEpisodeOfAnime({
+            id,
+            pageSize,
+            episode,
+            allOfEpisode,
+          });
+
+          redisClient.setex(id, 3600, elements);
+
+          res.status(code).json({
+            message: message,
+            elements,
+          });
+        }
+      });
+    } catch (err) {
+      res.status(500).send({ message: err.message });
     }
   },
   findExactEpisodesOnAired: async (req, res, next) => {
@@ -84,28 +122,58 @@ module.exports = {
       res.status(501).json({ message: error.message });
     }
   },
-  findEpisodeBySearchName : async ( req, res, next ) => {
-      try {
-          const { search} = req.body;
-          const {code, message, elements} = await findEpisodeBySearchName({search})
-          res.status(code).json({
-              message: message,
-              elements: elements
-          })
-      } catch (error) {
-        res.status(501).json({ message: error.message });
-      }
-  },
-  findAllAnimeBySearchName : async(req,res,next) =>{
+  findBySearchName: async (req, res, next) => {
     try {
-        const { search} = req.body;
-        const {code, message, elements} = await findAllAnimeBySearchName({search})
+      const { search, _Model } = req.body;
+      let result = {};
+
+      const searchResult = async (search) => {
+        const searchAnime = _Anime.find({ $text: { $search: search } });
+        const searchEpisode = _Episode.find({ $text: { $search: search } });
+        const result = await Promise.all([searchAnime, searchEpisode]);
+        return result;
+      };
+      if (_Model === "All") {
+        searchResult(search).then((resp) => {
+          res.status(200).json({
+            message: "All results were found",
+            elements: resp,
+          });
+        });
+      } else {
+        switch (_Model) {
+          case "_Anime":
+            result = await findBySearchName(search, _Anime);
+
+            break;
+          case "_Episode":
+            result = await findBySearchName(search, _Episode);
+
+            break;
+
+          default:
+            console.error("Unknown search term: " + search);
+        }
+
+        const { code, message, elements } = result;
         res.status(code).json({
-            message: message,
-            elements: elements
-        })
+          message: message,
+          elements: elements,
+        });
+      }
     } catch (error) {
       res.status(501).json({ message: error.message });
     }
-  }
+  },
+  deleteManyEpisodes: async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      await _Episode.deleteMany({ animeId: id });
+      res.status(200).json({
+        message: "Success",
+      });
+    } catch (error) {
+      res.status(501).json({ message: error.message });
+    }
+  },
 };

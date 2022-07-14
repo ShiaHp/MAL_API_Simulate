@@ -2,40 +2,40 @@ const { Schema, model } = require("mongoose");
 
 const episodeSchema = new Schema(
   {
-    titleEng : {
-        type: String,
-        required: true,
+    titleEng: {
+      type: String,
+      required: true,
     },
-    titleJP : {
-        type :String,
+    titleJP: {
+      type: String,
     },
-    VideoUrl  :{
-        type : String,
+    episode: {
+      type: Number,
+      required: true,
     },
-    aired :{
-        type :Date,
+    VideoUrl: {
+      type: String,
     },
-    animeId : {
-        type : Schema.Types.ObjectId,
-        ref : "Anime"
-    }
- 
+    aired: {
+      type: Date,
+    },
+    animeId: {
+      type: Schema.Types.ObjectId,
+      ref: "Anime",
+    },
   },
   { collection: "episode" }
 );
 
+episodeSchema.index({ titleEng: "text" } , {default_language : "en"})
+// not support yet for this
+episodeSchema.index({ titleJP: "text" } , {default_language : 'none'} );
 
-
-episodeSchema.index({titleEng : 'text'}, {titleJP : "text"})
-
-episodeSchema.virtual('Anime',{
-    ref : 'Anime',
-    localField : "_id",
-    foreignField : "episode",
-    as : "episode_Anime",
-})
-
-
-
+episodeSchema.virtual("Anime", {
+  ref: "Anime",
+  localField: "_id",
+  foreignField: "episode",
+  as: "episode_Anime",
+});
 
 module.exports = model("Episode", episodeSchema);

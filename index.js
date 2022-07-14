@@ -4,11 +4,22 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const auth = require("../server/middleware/auth");
 const dotenv = require("dotenv");
+var morgan = require("morgan");
+const redisClient  = require("./utils/redis")
+const logger = require("./utils/log/index")
+
+/*console.log('hello');
+console.info('text info');
+console.warn('text warn');
+console.error('text error');
+console.error(new Error('something went wrong'));*/
+
 
 // set up
 const app = express();
 
-
+app.use(express.static("public"));
+app.use(morgan("tiny"));
 app.use(
   cors({
     origin: "http://localhost:3000", // allow to server to accept request from different origin
@@ -16,9 +27,6 @@ app.use(
     credentials: true, // allow session cookie from browser to pass through
   })
 );
-
-
-
 
 app.use(bodyParser.json({}));
 app.use(cors());
@@ -29,10 +37,9 @@ const connectDB = (url) => {
 };
 // Routes
 
-const userRoute = require("./routes/user.route")
-const withListRoute = require("./routes/userChange,route")
-const animeRoute = require("./routes/anime.route")
-
+const userRoute = require("./routes/user.route");
+const withListRoute = require("./routes/userChange,route");
+const animeRoute = require("./routes/anime.route");
 
 app.use(
   bodyParser.urlencoded({
@@ -44,9 +51,9 @@ app.use(
 
 // routes
 
-app.use("/api/v1/auth/",userRoute)
-app.use("/api/v1/users",withListRoute)
-app.use("/api/v1/anime" , animeRoute)
+app.use("/api/v1/auth/", userRoute);
+app.use("/api/v1/users", withListRoute);
+app.use("/api/v1/anime", animeRoute);
 
 const start = async () => {
   try {
@@ -59,5 +66,11 @@ const start = async () => {
     console.log(error);
   }
 };
+redisClient.on('connect',() => {
+  console.log('connected to redis successfully!');
+})
 
+redisClient.on('error',(error) => {
+  console.log('Redis connection error :', error);
+})
 start();
