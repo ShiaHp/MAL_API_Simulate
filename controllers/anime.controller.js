@@ -1,7 +1,9 @@
 const _Anime = require("../models/Anime/anime.model");
 const _Episode = require("../models/Anime/epsisode.model");
 const redisClient = require("../utils/redis");
-
+const _Character = require("../models/Anime/character.model");
+const _VoiceActor = require("../models/Anime/voiceActor.model");
+const cloudinary = require("../utils/cloudinary");
 
 const {
   addEpisode,
@@ -9,6 +11,7 @@ const {
   findAllEpisodeOfAnime,
   findExactEpisodesOnAired,
   findBySearchName,
+  getAnime
 } = require("../services/anime.services");
 
 function dateIsValid(dateStr) {
@@ -30,6 +33,15 @@ function dateIsValid(dateStr) {
 }
 
 module.exports = {
+  getAnime : async (req, res) => { 
+    try {
+      const { slug} = req.params
+      const {code , message, elements} = await getAnime({ slug}) 
+      res.status(code).json({message, elements })
+    } catch (error) {
+      res.status(404).send(error);
+    }
+  },
   addEpisode: async (req, res, next) => {
     try {
       const { code, message, elements } = await addEpisode(req.body);
@@ -43,9 +55,11 @@ module.exports = {
   },
   addNewAnime: async (req, res, next) => {
     try {
-    
-   
-      const { code, message, elements } = await addNewAnime(req.body);
+      const info = []
+      const result = await cloudinary.uploader.upload(req.file.path);
+        info.push(req.body)
+        info.push(result.secure_url)
+      const { code, message, elements } = await addNewAnime(info);
       res.status(code).json({
         message: message,
         elements,
@@ -130,7 +144,9 @@ module.exports = {
       const searchResult = async (search) => {
         const searchAnime = _Anime.find({ $text: { $search: search } });
         const searchEpisode = _Episode.find({ $text: { $search: search } });
-        const result = await Promise.all([searchAnime, searchEpisode]);
+        const searchCharacters = _Character.find({ $text: { $search: search } });
+        const searchVoiceActors = _VoiceActor.find({ $text: { $search: search } });
+        const result = await Promise.all([searchAnime, searchEpisode , searchCharacters,searchVoiceActors]);
         return result;
       };
       if (_Model === "All") {
@@ -150,7 +166,14 @@ module.exports = {
             result = await findBySearchName(search, _Episode);
 
             break;
-
+            case "_Character":
+              result = await findBySearchName(search, _Character);
+  
+              break;
+              case "_VoiceActor":
+                result = await findBySearchName(search, _VoiceActor);
+    
+                break;
           default:
             console.error("Unknown search term: " + search);
         }

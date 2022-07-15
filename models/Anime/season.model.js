@@ -4,13 +4,17 @@ const seasonSchema = new Schema(
   {
     year: {
       type: Number,
-      unique: true,
     },
     season: {
       type: String,
       enum: ["Spring", "Summer", "Autumn", "Winter"],
     },
-    animeIdOfSeason: [String],
+    animeIdOfSeason: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Anime",
+      },
+    ],
   },
   { collection: "season" }
 );
@@ -27,7 +31,7 @@ seasonSchema.statics.isYearValid = async function (yearCandidate) {
         return false;
       }
       const current_year = new Date().getFullYear();
-      if (year < 1920 || year > current_year) {
+      if (year < 1920 || year > 3000 ) {
         return false;
       }
       return true;

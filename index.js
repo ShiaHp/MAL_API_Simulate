@@ -27,6 +27,11 @@ app.use(
     credentials: true, // allow session cookie from browser to pass through
   })
 );
+app.use("/public/uploads", express.static(__dirname + "/public/uploads"));
+app.use(
+  "/public/uploads/post",
+  express.static(__dirname + "/public/uploads/post")
+);
 
 app.use(bodyParser.json({}));
 app.use(cors());

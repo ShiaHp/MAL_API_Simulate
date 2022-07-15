@@ -1,14 +1,20 @@
 // https://myanimelist.net/anime/{id}/episodes
-
+const slugify = require("slugify");
 const { Schema, model } = require("mongoose");
-
+const slug = require("slug");
 const animeSchema = new Schema(
   {
     titleEng: {
       type: String,
       required: true,
     },
+
+    slug: String,
+
     alternativeTitle: {
+      type: String,
+    },
+    image: {
       type: String,
     },
     Synopsis: {
@@ -33,16 +39,13 @@ const animeSchema = new Schema(
     },
     Episodes: Number,
     Status: {
-      Type: String,
+      type: String,
       enum: ["Completed", "Airing", "Canceled", "Continued"],
     },
     Aired: {
       type: String,
     },
-    Premiered: {
-      type: Schema.Types.ObjectId,
-      ref: "season",
-    },
+
     Broadcast: {
       type: Date,
     },
@@ -111,14 +114,15 @@ const animeSchema = new Schema(
     Duration: {
       type: String,
     },
-    Rating: {
-      type: Number,
-    },
     openingTheme: {
       type: String,
     },
     endingTheme: {
       type: String,
+    },
+    Premiered: {
+      type: Schema.Types.ObjectId,
+      ref: "season",
     },
     episodeId: [
       {
@@ -133,5 +137,9 @@ const animeSchema = new Schema(
 );
 
 animeSchema.index({ titleEng: "text" });
-
+animeSchema.index({slug : 1})
+animeSchema.pre('save', function(next){
+  this.slug = slugify(this.titleEng, {lower : true});
+  next();
+})
 module.exports = model("Anime", animeSchema);

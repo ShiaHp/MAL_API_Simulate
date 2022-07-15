@@ -3,6 +3,26 @@ const _Episode = require("../models/Anime/epsisode.model");
 const logger = require("../utils/log/index");
 const _Season = require("../models/Anime/season.model");
 module.exports = {
+  getAnime : async({ slug}) =>{
+      try {
+        const anime = await _Anime.findOne({ slug: slug});
+        if(!anime) {
+          return {
+            code : 401,
+            message : 'Anime not found successfully '  ,
+            elements : 0
+          }
+         
+        }
+        return {
+          code : 200,
+          message : 'Anime found successfully '  ,
+          elements : [anime]
+        }
+      } catch (e) {
+        res.status(404).send(e);
+      }
+  },
   addEpisode: async (info) => {
     try {
       const { animeId, episode } = info;
@@ -15,7 +35,6 @@ module.exports = {
       }
 
       const oldEpisodes = await _Episode.find({ animeId: animeId });
-      
 
       if (
         oldEpisodes.length > 0 &&
@@ -49,19 +68,42 @@ module.exports = {
   },
   addNewAnime: async (info) => {
     try {
-      console.log(info);
-      const newAnime = await _Anime.create(info);
-      console.log(newAnime);
-       await _Season.findByIdAndUpdate(
-        { _id: newAnime.Premiered },
-        { $push: { animeIdOfSeason: newAnime._id } },
+
+      let anime = new _Anime({
+        titleEng:   info[0].titleEng,
+        image:   info[1],
+        alternativeTitle:   info[0].alternativeTitle,
+        Synopsis:   info[0].Synopsis,
+        Background:   info[0].Background,
+        rating:   info[0].Rating,
+        ratingValue:   info[0].RatingValue,
+        ratingAvg:   info[0].Rating,
+        Type:   info[0].Type,
+        Status:   info[0].Status,
+        Aired:   info[0].Aired,
+        Broadcast:   info[0].Broadcast,
+        Source:   info[0].Source,
+        Genres:   info[0].Genres,
+        Duration:   info[0].Duration,
+        openingTheme:   info[0].openingTheme,
+        endingTheme:   info[0].endingTheme,
+        Premiered:   info[0].Premiered,
+        episodes:   info[0].episodes,
+        StreamingPlatforms:   info[0].StreamingPlatforms,
+      });
+      await anime.save();
+
+      await _Season.findByIdAndUpdate(
+        { _id: anime.Premiered },
+        { $push: { animeIdOfSeason: anime._id } },
         { new: true }
       );
       return {
         code: 201,
         message: "Adding new episode successfully added to",
-        elements: newAnime,
+        elements: anime ,
       };
+    
     } catch (error) {
       return {
         code: 501,
@@ -126,35 +168,29 @@ module.exports = {
     }
   },
   findBySearchName: async (search, _Model) => {
-    try { 
+    try {
+      if (!_Model || !search)
+        return {
+          code: 404,
+          message: "Please enter a search name and try again",
+          elements: 0,
+        };
 
-    if (!_Model || !search)
-    return {
-      code: 404,
-      message: "Please enter a search name and try again",
-      elements: 0,
-    };
+      const resultOfSearch = await _Model.find({
+        $text: { $search: search },
+      });
 
-  const resultOfSearch = await _Model.find({
-    $text: { $search: search },
-  });
-
-  return {
-    code: 200,
-    message: `All result match that search`,
-    elements: { resultOfSearch },
-  }
-  
-} catch (error) {
-  return {
-    code: 501,
-    message: error.message,
-    elements: 0,
-  };
-}
-   
- 
- 
-
-  }
-}
+      return {
+        code: 200,
+        message: `All result match that search`,
+        elements: { resultOfSearch },
+      };
+    } catch (error) {
+      return {
+        code: 501,
+        message: error.message,
+        elements: 0,
+      };
+    }
+  },
+};
