@@ -8,7 +8,9 @@ const {
   findExactEpisodesOnAired,
   findBySearchName,
   deleteManyEpisodes,
-  getAnime
+  getAnime,
+  getAnimeGenre,
+  advanceSearch
 } = require("../controllers/anime.controller");
 const multer = require("multer");
 const upload = require("../utils/multer");
@@ -18,11 +20,13 @@ const {
   createNewVoiceActor,
   addNewCharacter,
   getCharacterAndVaFromAnime,
-  getAnimeFollowSeasons
+  getAnimeFollowSeasons,
+  
 } = require("../controllers/anime_info/anime_info_controller");
 
 router.post("/addNewAnime", upload.single("image"), addNewAnime);
 
+router.get("/genre/:genre",getAnimeGenre)
 router.post("/addEpisode", addEpisode);
 router.get("/getAllEpisode", findAllEpisodeOfAnime);
 router.get("/getEpisodeExactlyByDate", findExactEpisodesOnAired);
@@ -34,6 +38,9 @@ router.get("/getCharacterAndVaFromAnime/:id", getCharacterAndVaFromAnime);
 router.post("/createNewSeason", createSeasonsYear);
 router.get("/:seasonYear/:season" , getAnimeFollowSeasons);
 router.get("/:slug" , getAnime)
+
+
+
 
 
 

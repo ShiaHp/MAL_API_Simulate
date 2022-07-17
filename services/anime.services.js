@@ -3,25 +3,97 @@ const _Episode = require("../models/Anime/epsisode.model");
 const logger = require("../utils/log/index");
 const _Season = require("../models/Anime/season.model");
 module.exports = {
-  getAnime : async({ slug}) =>{
-      try {
-        const anime = await _Anime.findOne({ slug: slug});
-        if(!anime) {
-          return {
-            code : 401,
-            message : 'Anime not found successfully '  ,
-            elements : 0
-          }
-         
-        }
+  getAnimeGenre: async ({ genre }) => {
+    try {
+      const genreArr = [
+        "Action",
+        "Adventure",
+        "Cars",
+        "Comedy",
+        "AvantGarde",
+        "Demons",
+        "Mystery",
+        "Drama",
+        "Ecchi",
+        "Fantasy",
+        "Game",
+        "Hentai",
+        "Historical",
+        "Horror",
+        "Kids",
+        "MartialArts",
+        "Mecha",
+        "Music",
+        "Parody",
+        "Samurai",
+        "Romance",
+        "School",
+        "SciFi",
+        "Shoujo",
+        "Girls love",
+        "Shounen",
+        "Boys love",
+        "Space",
+        "Sports",
+        "SuperPower",
+        "Vampire",
+        "Harem",
+        "Slice of Life",
+        "Supernatural",
+        "Military",
+        "Police",
+        "Psychological",
+        "Suspense",
+        "Seinen",
+        "Josei",
+        "Award winning",
+        "Gourmet",
+        "Work life",
+        "Erotica",
+      ];
+
+      const checkGenre = genreArr.indexOf(genre);
+      if (checkGenre >= 0) {
+        const animeOfGenres = await _Anime.find({ Genres: { $all: [genre] } });
+
         return {
-          code : 200,
-          message : 'Anime found successfully '  ,
-          elements : [anime]
-        }
-      } catch (e) {
-        res.status(404).send(e);
+          code: 200,
+          message: "Anime found with that genre",
+          elements: animeOfGenres,
+        };
+      } else {
+        return {
+          code: 401,
+          message: "Invalid Genres ",
+          elements: 0,
+        };
       }
+    } catch (e) {
+      return {
+        code: 401,
+        message: e.message,
+        elements: 0,
+      };
+    }
+  },
+  getAnime: async ({ slug }) => {
+    try {
+      const anime = await _Anime.findOne({ slug: slug });
+      if (!anime) {
+        return {
+          code: 401,
+          message: "Anime not found successfully ",
+          elements: 0,
+        };
+      }
+      return {
+        code: 200,
+        message: "Anime found successfully ",
+        elements: [anime],
+      };
+    } catch (e) {
+      res.status(404).send(e);
+    }
   },
   addEpisode: async (info) => {
     try {
@@ -68,28 +140,29 @@ module.exports = {
   },
   addNewAnime: async (info) => {
     try {
-
       let anime = new _Anime({
-        titleEng:   info[0].titleEng,
-        image:   info[1],
-        alternativeTitle:   info[0].alternativeTitle,
-        Synopsis:   info[0].Synopsis,
-        Background:   info[0].Background,
-        rating:   info[0].Rating,
-        ratingValue:   info[0].RatingValue,
-        ratingAvg:   info[0].Rating,
-        Type:   info[0].Type,
-        Status:   info[0].Status,
-        Aired:   info[0].Aired,
-        Broadcast:   info[0].Broadcast,
-        Source:   info[0].Source,
-        Genres:   info[0].Genres,
-        Duration:   info[0].Duration,
-        openingTheme:   info[0].openingTheme,
-        endingTheme:   info[0].endingTheme,
-        Premiered:   info[0].Premiered,
-        episodes:   info[0].episodes,
-        StreamingPlatforms:   info[0].StreamingPlatforms,
+        titleEng: info[0].titleEng,
+        image: info[1],
+        alternativeTitle: info[0].alternativeTitle,
+        Synopsis: info[0].Synopsis,
+        Background: info[0].Background,
+        rating: info[0].Rating,
+        ratingValue: info[0].RatingValue,
+        ratingAvg: info[0].Rating,
+        Type: info[0].Type,
+        Status: info[0].Status,
+        Broadcast: info[0].Broadcast,
+        Source: info[0].Source,
+        Genres: info[0].Genres,
+        Duration: info[0].Duration,
+        openingTheme: info[0].openingTheme,
+        endingTheme: info[0].endingTheme,
+        startDate: info[0].startDate,
+        endDate: info[0].endDate,
+        Rated: info[0].Rated,
+        Premiered: info[0].Premiered,
+        episodes: info[0].episodes,
+        StreamingPlatforms: info[0].StreamingPlatforms,
       });
       await anime.save();
 
@@ -101,9 +174,8 @@ module.exports = {
       return {
         code: 201,
         message: "Adding new episode successfully added to",
-        elements: anime ,
+        elements: anime,
       };
-    
     } catch (error) {
       return {
         code: 501,
@@ -189,6 +261,87 @@ module.exports = {
       return {
         code: 501,
         message: error.message,
+        elements: 0,
+      };
+    }
+  },
+  advanceSearch: async (
+    Rated,
+    Status,
+    Genres,
+    startDate,
+    endDate,
+    excludeGenres
+  ) => {
+    try {
+      const queryObject = {};
+
+      if (Rated && Rated !== null) {
+        queryObject.Rated = Rated;
+      }
+      if (Status && Status !== null) {
+        queryObject.Status = Status;
+      }
+      if (Genres && Genres !== null) {
+        queryObject.Genres = Genres;
+      }
+
+      const timeStart = new Date(startDate);
+      const timeEnd = new Date(endDate);
+
+      if (startDate && endDate) {
+        const foundAnime = await _Anime.find({
+          $and: [
+            { startDate: { $gte: timeStart } },
+            { endDate: { $lte: timeEnd } },
+            { queryObject: queryObject },
+          ],
+        });
+        if (!foundAnime) {
+          return {
+            code: 400,
+            message: "Failed to find anime",
+            elements: 0,
+          };
+        }
+        return {
+          code: 200,
+          message: "Success",
+          elements: foundAnime,
+        };
+      } else {
+        // $or: [
+        //   { Genres: { $all: Genres }, Rated: "PG-children", Status: Status },
+        // ],
+        console.log(queryObject);
+        console.log(excludeGenres)
+        const foundAnime = await _Anime.find({
+          $and: [
+          
+            queryObject,
+            {
+              Genres: { $ne: excludeGenres },
+            },
+          ],
+        });
+        if (!foundAnime) {
+          return {
+            code: 400,
+            message: "Failed to find anime",
+            elements: 0,
+          };
+        }
+
+        return {
+          code: 200,
+          message: "Success",
+          elements: foundAnime,
+        };
+      }
+    } catch (e) {
+      return {
+        code: 401,
+        message: e.message,
         elements: 0,
       };
     }

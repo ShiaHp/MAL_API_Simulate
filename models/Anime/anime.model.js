@@ -1,14 +1,14 @@
 // https://myanimelist.net/anime/{id}/episodes
 const slugify = require("slugify");
 const { Schema, model } = require("mongoose");
-const slug = require("slug");
+
 const animeSchema = new Schema(
   {
     titleEng: {
       type: String,
       required: true,
     },
-
+    
     slug: String,
 
     alternativeTitle: {
@@ -35,17 +35,13 @@ const animeSchema = new Schema(
 
     Type: {
       type: String,
-      enum: ["TV", "ONAs", "Movies", "Specials"],
+      enum: ["TV", "ONAs", "Movies", "Specials","Musics"],
     },
     Episodes: Number,
     Status: {
       type: String,
       enum: ["Completed", "Airing", "Canceled", "Continued"],
     },
-    Aired: {
-      type: String,
-    },
-
     Broadcast: {
       type: Date,
     },
@@ -124,6 +120,20 @@ const animeSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "season",
     },
+    Rated: {
+      type: String,
+      enum: [
+        "G-All-ages",
+        "PG-children",
+        "PG-13 - Teens 13 or older",
+        "R - 17+ (violence & profanity)",
+        "R+ - Mild Nudity",
+        "Rx - Hentai",
+      ],
+   
+    },
+    startDate : Date,
+    endDate : Date,
     episodeId: [
       {
         type: Schema.Types.ObjectId,
@@ -137,9 +147,8 @@ const animeSchema = new Schema(
 );
 
 animeSchema.index({ titleEng: "text" });
-animeSchema.index({slug : 1})
-animeSchema.pre('save', function(next){
-  this.slug = slugify(this.titleEng, {lower : true});
+animeSchema.pre("save", function (next) {
+  this.slug = slugify(this.titleEng, { lower: true });
   next();
-})
+});
 module.exports = model("Anime", animeSchema);

@@ -45,6 +45,7 @@ const connectDB = (url) => {
 const userRoute = require("./routes/user.route");
 const withListRoute = require("./routes/userChange,route");
 const animeRoute = require("./routes/anime.route");
+const anime_infoRoute = require("./routes/anime_info.routes");
 
 app.use(
   bodyParser.urlencoded({
@@ -59,6 +60,7 @@ app.use(
 app.use("/api/v1/auth/", userRoute);
 app.use("/api/v1/users", withListRoute);
 app.use("/api/v1/anime", animeRoute);
+app.use("/api/v1/animeinfo",anime_infoRoute)
 
 const start = async () => {
   try {
