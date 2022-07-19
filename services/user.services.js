@@ -1,4 +1,5 @@
 const _User = require("../models/user.model");
+const _Wishlist = require("../models/withList");
 const _OTP = require("../models/otp.model");
 const apiError = require("../utils/ApiError");
 const otpGenerator = require("otp-generator");
@@ -8,6 +9,44 @@ const { sendTextMessage } = require("../utils/SendSMS");
 const crypto = require("crypto");
 
 module.exports = {
+  findAllWishlist: async ({ id }) => {
+    try {
+      const wishlistFound = await _Wishlist.find({ userid : id}).populate("wishAnime");
+      return {
+        code  :201,
+        message : 'Success ',
+        elements : wishlistFound
+      }
+    } catch (e) {
+      return {
+        code  :401,
+        message : e.message,
+        elements : 0
+      }
+    }
+  },
+  createWishlist: async (info) => {
+    try {
+      const newWishlist = await new _Wishlist({
+        userid: info.userid,
+        wishAnime: info.wishAnime,
+        score: info.score,
+        status: info.status,
+      }).save();
+
+      return {
+        code: 200,
+        message: " Success",
+        elements: newWishlist,
+      };
+    } catch (error) {
+      return {
+        code: 401,
+        message: e.message,
+        elements: 0,
+      };
+    }
+  },
   registerUser: async ({ email }) => {
     if (await _User.isEmailTaken(email)) {
       throw new apiError(httpStatus.BAD_REQUEST, "Email already taken");
@@ -125,8 +164,11 @@ module.exports = {
       }
       const username = `${user.firstName} ${user.lastName}`;
       const resetToken = user.createPasswordResetToken();
-     await user.save({  passwordResetToken : resetToken ,  passwordResetExpires : Date.now() + 10 * 60 * 1000 });
-      
+      await user.save({
+        passwordResetToken: resetToken,
+        passwordResetExpires: Date.now() + 10 * 60 * 1000,
+      });
+
       return {
         code: 201,
         resetToken,
@@ -137,38 +179,34 @@ module.exports = {
       console.log(error);
     }
   },
-  resetPassword : async ({tokenNotHashed,password}) =>{
-    const hashedToken = crypto.createHash('sha256').update(tokenNotHashed).digest('hex');
-  
+  resetPassword: async ({ tokenNotHashed, password }) => {
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(tokenNotHashed)
+      .digest("hex");
 
     const user = await _User.findOne({
-        passwordResetToken : hashedToken ,
-        passwordResetExpires : {$gt : Date.now()},
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: Date.now() },
     });
-    console.log(user)
-    if(!user){
-        return{
-            code : 501,
-            message : 'Invalid token'
-        }
+    console.log(user);
+    if (!user) {
+      return {
+        code: 501,
+        message: "Invalid token",
+      };
     }
-        const tokenReturn = user.createJWT()
- 
+    const tokenReturn = user.createJWT();
 
-                user.password = password;
-            user.passwordResetToken = undefined;
-            user.passwordResetExpires = undefined;
-            await user.save();
-        return{
-            code :  201,
-            user,
-            tokenReturn,
-            message : 'Your password has been reset.'
-        }
-  
-  
-
-
-  }
-  
+    user.password = password;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+    return {
+      code: 201,
+      user,
+      tokenReturn,
+      message: "Your password has been reset.",
+    };
+  },
 };

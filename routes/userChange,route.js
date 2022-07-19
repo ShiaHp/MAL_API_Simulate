@@ -1,9 +1,9 @@
 
 const express = require('express')
 const router = express.Router();
-const { registerUser , createWishlist,findWishlist, verifyUser } = require('../controllers/user.controller')
+const {  createWishlist,findAllWishlist } = require('../controllers/user.controller')
 
-router.route("/wishlist").get(findWishlist).post(createWishlist)
+router.route("/wishlist/:id").get(findAllWishlist).post(createWishlist)
 
 
 

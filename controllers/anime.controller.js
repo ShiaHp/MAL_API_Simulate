@@ -13,7 +13,7 @@ const {
   findBySearchName,
   getAnime,
   getAnimeGenre,
-  advanceSearch
+  advanceSearch,
 } = require("../services/anime.services");
 
 function dateIsValid(dateStr) {
@@ -35,32 +35,85 @@ function dateIsValid(dateStr) {
 }
 
 module.exports = {
+  getAnimeById : async (req, res, next) => { 
+      try{
+        const {id} = req.params;
+        const animeFound = await _Anime.find({_id : id})
+        if(!animeFound) {
+          res.status(302).json({
+            message : 'Anime not found'
+          })
+        }
+        res.status(200).json({ animeFound})
+      } catch(e){ 
+        res.status(404).send(e);
+      }
+  },
+  deleteAnimeById  : async (req, res, next) => { 
+        try {
+          const {id} = req.params;
+          console.log(id); 
+          await _Anime.findByIdAndDelete({_id : id})
+          res.status(200).json({ message : 'Anime deleted successfully '})
+        } catch(e) {
+          res.status(404).send(e);
+        }
+  },
   advanceSearch: async (req, res, next) => {
     try {
-      const {Rated, Status , Genres , startDate, endDate , excludeGenres} = req.query
-    
-   
+      const {
+        Rated,
+        Status,
+        Genres,
+        startDate,
+        endDate,
+        excludeGenres,
+        page,
+        pageSize,
+      } = req.query;
 
+      const { code, message, elements } = await advanceSearch(
+        Rated,
+        Status,
+        Genres,
+        startDate,
+        endDate,
+        excludeGenres,
+        page,
+        pageSize
+      );
 
-      const {code, message, elements}  = await  advanceSearch(Rated, Status  ,Genres,  startDate, endDate,excludeGenres);
-      res.status(code).json({message, elements })
+      const totalAnime = await _Anime.countDocuments();
+      const numsOfPages = Math.ceil(totalAnime / ((page - 1) * pageSize));
+
+      res.status(code).json({ numsOfPages, message, elements });
     } catch (e) {
       res.status(500).send({ message: "Error processing : " + e.message });
     }
   },
 
-  
   getAnimeGenre: async (req, res, next) => {
     try {
       const { genre } = req.params;
-      console.log(genre);
-      const { code, message, elements } = await getAnimeGenre({ genre });
-      res.status(code).json({
-        elements,
-        message,
+      redisClient.get(genre, async function (err, resp) {
+        if (err) throw err;
+        if (resp) {
+          res.status(200).json({
+            message: "Anime found with that " + genre,
+            resp: resp,
+          });
+        } else {
+          const { code, message, elements } = await getAnimeGenre({ genre });
+          const setRedisResult = JSON.stringify(elements);
+          redisClient.setex(genre, 3600, setRedisResult);
+          res.status(code).json({
+            elements,
+            message,
+          });
+        }
       });
     } catch (e) {
-      res.status(404).send(e);
+      res.status(404).send(e.message);
     }
   },
   getAnime: async (req, res) => {
@@ -168,7 +221,7 @@ module.exports = {
   },
   findBySearchName: async (req, res, next) => {
     try {
-      const { search, _Model } = req.body;
+      const { search, _Model, page, pageSize } = req.body;
       let result = {};
 
       const searchResult = async (search) => {
@@ -188,13 +241,34 @@ module.exports = {
         ]);
         return result;
       };
+
       if (_Model === "All") {
-        searchResult(search).then((resp) => {
-          res.status(200).json({
-            message: "All results were found",
-            elements: resp,
+        try {
+          redisClient.get(search, async (err, resp) => {
+            if (err) throw err;
+
+            if (resp) {
+              res.status(200).send({
+                res: resp,
+                message: "data retrieved from the cache",
+              });
+            } else {
+              searchResult(search).then((resp) => {
+                // const totalAnime = await _Anime.countDocuments();
+                // const numsOfPages = Math.ceil(totalAnime / ((page - 1) * pageSize))
+                const setRedisResult = JSON.stringify(resp);
+                redisClient.setex(search, 3600, setRedisResult);
+                res.status(200).json({
+                  message: "All results were found",
+
+                  elements: resp,
+                });
+              });
+            }
           });
-        });
+        } catch (e) {
+          res.status(505).send({ messages: e.message });
+        }
       } else {
         switch (_Model) {
           case "_Anime":

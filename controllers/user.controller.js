@@ -8,7 +8,9 @@ const {
   verifyUser,
   loginUser,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  createWishlist,
+  findAllWishlist
 } = require("../services/user.services");
 module.exports = {
   registerUser: async (req, res, next) => {
@@ -40,17 +42,23 @@ module.exports = {
     }
   },
   createWishlist: async (req, res, next) => {
-    await new _Wishlist(req.body).save();
-    res.status(200).send({ message: "Success" });
+      try {
+        console.log(req.body)
+        const { code , elements , message } = await createWishlist(req.body)
+        res.status(code).json({elements , message} )
+
+      } catch (error) { 
+        res.status(404).json(error);
+      }
   },
-  findWishlist: async (req, res, next) => {
-    const wishlist = await _Wishlist
-      .find({
-        userid: "62cc291440ee8f4348e36245",
-      })
-      .select()
-      .populate("userid", "");
-    res.status(200).json({ wishlist });
+  findAllWishlist: async (req, res, next) => {
+    try {
+      const { id} = req.params;
+       const {code ,message , elements  } = await findAllWishlist({id});
+       res.status(code).json({message , elements })
+    } catch (error) { 
+      res.status(404).json(error.message);
+    }
   },
   forgotPassword: async (req, res, next) => {
     try {

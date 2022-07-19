@@ -1,6 +1,7 @@
 const _Anime = require("../models/Anime/anime.model");
 const _Episode = require("../models/Anime/epsisode.model");
 const logger = require("../utils/log/index");
+const redisClient = require("../utils/redis");
 const _Season = require("../models/Anime/season.model");
 module.exports = {
   getAnimeGenre: async ({ genre }) => {
@@ -271,7 +272,9 @@ module.exports = {
     Genres,
     startDate,
     endDate,
-    excludeGenres
+    excludeGenres,
+    page,
+    pageSize
   ) => {
     try {
       const queryObject = {};
@@ -290,13 +293,16 @@ module.exports = {
       const timeEnd = new Date(endDate);
 
       if (startDate && endDate) {
-        const foundAnime = await _Anime.find({
-          $and: [
-            { startDate: { $gte: timeStart } },
-            { endDate: { $lte: timeEnd } },
-            { queryObject: queryObject },
-          ],
-        });
+        const foundAnime = await _Anime
+          .find({
+            $and: [
+              { startDate: { $gte: timeStart } },
+              { endDate: { $lte: timeEnd } },
+              { queryObject: queryObject },
+            ],
+          })
+          .skip((page - 1) * pageSize)
+          .limit(pageSize);
         if (!foundAnime) {
           return {
             code: 400,
@@ -313,17 +319,17 @@ module.exports = {
         // $or: [
         //   { Genres: { $all: Genres }, Rated: "PG-children", Status: Status },
         // ],
-        console.log(queryObject);
-        console.log(excludeGenres)
-        const foundAnime = await _Anime.find({
-          $and: [
-          
-            queryObject,
-            {
-              Genres: { $ne: excludeGenres },
-            },
-          ],
-        });
+        const foundAnime = await _Anime
+          .find({
+            $and: [
+              queryObject,
+              {
+                Genres: { $ne: excludeGenres },
+              },
+            ],
+          })
+          .skip((page - 1) * pageSize)
+          .limit(pageSize);
         if (!foundAnime) {
           return {
             code: 400,

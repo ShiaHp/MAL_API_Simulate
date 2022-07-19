@@ -10,11 +10,13 @@ const {
   deleteManyEpisodes,
   getAnime,
   getAnimeGenre,
-  advanceSearch
+  advanceSearch,
+  getAnimeById,
+  deleteAnimeById
 } = require("../controllers/anime.controller");
-const multer = require("multer");
+
 const upload = require("../utils/multer");
-const cloudinary = require("../utils/cloudinary");
+
 const {
   createSeasonsYear,
   createNewVoiceActor,
@@ -25,6 +27,10 @@ const {
 } = require("../controllers/anime_info/anime_info_controller");
 
 router.post("/addNewAnime", upload.single("image"), addNewAnime);
+
+
+router.route("/info/:id").get(getAnimeById).delete(deleteAnimeById)
+
 
 router.get("/genre/:genre",getAnimeGenre)
 router.post("/addEpisode", addEpisode);
